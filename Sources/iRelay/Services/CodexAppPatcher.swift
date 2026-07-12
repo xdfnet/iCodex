@@ -4,8 +4,8 @@ import iRelayCore
 
 /// 管理 Codex 桌面版 app.asar 补丁
 final class CodexAppPatcher {
-    private let asar = URL(fileURLWithPath: "/Applications/Codex.app/Contents/Resources/app.asar")
-    private let backup = URL(fileURLWithPath: "/Applications/Codex.app/Contents/Resources/app.asar.bak")
+    private let asar = URL(fileURLWithPath: "/Applications/ChatGPT.app/Contents/Resources/app.asar")
+    private let backup = URL(fileURLWithPath: "/Applications/ChatGPT.app/Contents/Resources/app.asar.bak")
     /// 注意：Codex 每次升级可能改变 minifier 变量名（s→l 等），若失效需同步更新
     private let original = Data("l?t.has(n.model):!n.hidden".utf8)
     private let patched  = Data("l?!n.hidden     :!n.hidden".utf8)
