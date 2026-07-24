@@ -113,7 +113,7 @@ Sources/iRelay/
 | Codex CLI | ≥ 0.142.0 | 通过 `~/.codex/config.toml` 配置中转 |
 | Codex 桌面 App | Desktop 对应 0.142.x | 修补 `app.asar` 模型白名单过滤 |
 
-> ⚠️ **补丁机制依赖 asar 中 minified JS 的变量名**，每次 Codex 桌面版升级后变量名可能变化（如 `s→l`），导致补丁失效。届时需更新 iRelay 重新适配。
+> ⚠️ **补丁机制依赖 asar 中 minified JS 的变量名**，每次 Codex 桌面版升级后变量名可能变化（如 `s→l→u`），导致补丁失效。届时需更新 iRelay 重新适配。
 
 ## Codex 桌面 App 适配
 

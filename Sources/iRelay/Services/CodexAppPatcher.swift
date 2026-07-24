@@ -6,9 +6,9 @@ import iRelayCore
 final class CodexAppPatcher {
     private let asar = URL(fileURLWithPath: "/Applications/ChatGPT.app/Contents/Resources/app.asar")
     private let backup = URL(fileURLWithPath: "/Applications/ChatGPT.app/Contents/Resources/app.asar.bak")
-    /// 注意：Codex 每次升级可能改变 minifier 变量名（s→l 等），若失效需同步更新
-    private let original = Data("l?t.has(n.model):!n.hidden".utf8)
-    private let patched  = Data("l?!n.hidden     :!n.hidden".utf8)
+    /// 注意：Codex 每次升级可能改变 minifier 变量名（s→l→u 等），若失效需同步更新
+    private let original = Data("u?n.has(r.model):!r.hidden".utf8)
+    private let patched  = Data("u?!r.hidden     :!r.hidden".utf8)
 
     /// 检测是否已打补丁（不修改文件）
     var isPatched: Bool {
