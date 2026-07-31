@@ -6,14 +6,21 @@ import iRelayCore
 final class CodexAppPatcher {
     private let asar = URL(fileURLWithPath: "/Applications/ChatGPT.app/Contents/Resources/app.asar")
     private let backup = URL(fileURLWithPath: "/Applications/ChatGPT.app/Contents/Resources/app.asar.bak")
-    /// 注意：Codex 每次升级可能改变 minifier 变量名（s→l→u 等），若失效需同步更新
-    private let original = Data("u?n.has(r.model):!r.hidden".utf8)
-    private let patched  = Data("u?!r.hidden     :!r.hidden".utf8)
+    /// 注意：Codex 每次升级可能改变 minifier 变量名（s→l→u→i/e/r 等）并新增过滤点，失效时需同步更新。
+    /// 26.727 起为两处过滤，均为「useHiddenModels 时查白名单，否则仅看 hidden」的三元式，等长替换掉白名单分支。
+    /// 过滤点 1：主 UI 模型列表（K$r）  ?n.has(r.model):!r.hidden
+    /// 过滤点 2：list-models-for-host（kVu）  ?i.availableModels.has(e.model):!e.hidden
+    private let patches: [(original: Data, patched: Data)] = [
+        (Data("?n.has(r.model):!r.hidden".utf8),
+         Data("?!r.hidden     :!r.hidden".utf8)),
+        (Data("?i.availableModels.has(e.model):!e.hidden".utf8),
+         Data("?!e.hidden                     :!e.hidden".utf8)),
+    ]
 
     /// 检测是否已打补丁（不修改文件）
     var isPatched: Bool {
         guard let data = try? Data(contentsOf: asar) else { return false }
-        return data.range(of: patched) != nil
+        return patches.allSatisfy { data.range(of: $0.patched) != nil }
     }
 
     /// 检测 App 管理权限（试探写入临时文件）
@@ -40,8 +47,8 @@ final class CodexAppPatcher {
     @discardableResult
     func ensurePatched() -> Bool {
         guard let data = try? Data(contentsOf: asar) else { return false }
-        if data.range(of: patched) != nil { return true }
-        guard data.range(of: original) != nil else { return false }
+        if isPatched { return true }
+        guard patches.allSatisfy({ data.range(of: $0.original) != nil }) else { return false }
 
         do {
             if FileManager.default.fileExists(atPath: backup.path) {
@@ -73,9 +80,11 @@ final class CodexAppPatcher {
     }
 
     private func applyPatch(_ data: Data) -> Bool {
-        guard let r = data.range(of: original) else { return false }
         var d = data
-        d.replaceSubrange(r, with: patched)
+        for patch in patches {
+            guard let r = d.range(of: patch.original) else { return false }
+            d.replaceSubrange(r, with: patch.patched)
+        }
         try? d.write(to: asar, options: .atomic)
         return true
     }
