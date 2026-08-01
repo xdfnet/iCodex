@@ -14,10 +14,5 @@ let package = Package(
             dependencies: ["iRelayCore"],
             path: "Sources/iRelay"
         ),
-        .testTarget(
-            name: "iRelayTests",
-            dependencies: ["iRelayCore"],
-            path: "Tests/iRelayTests"
-        ),
     ]
 )

@@ -1,7 +1,7 @@
 import Foundation
 import iRelayCore
 
-/// 管理 ~/.codex/config.toml，控制 Codex 使用 iRelay 本地中转
+/// 管理 ~/.codex/config.toml，控制 Codex 直连 DeepSeek
 final class CodexConfigManager {
     private let appPatcher = CodexAppPatcher()
 
@@ -17,15 +17,17 @@ final class CodexConfigManager {
 
     private var configDir: URL { configPath.deletingLastPathComponent() }
     private var modelCatalogPath: URL {
-        configDir.appendingPathComponent("irelay-models.json")
+        configDir.appendingPathComponent("models.json")
     }
 
     @discardableResult
-    func enable(model: String, port: UInt16) -> Bool {
+    func enable(model: String, apiKey: String) -> Bool {
         let raw = (try? String(contentsOf: configPath, encoding: .utf8)) ?? ""
-        let next = configureCodexTOML(raw, model: model, port: port)
+        let next = configureCodexTOML(raw, model: model, apiKey: apiKey)
         do {
             try FileManager.default.createDirectory(at: configDir, withIntermediateDirectories: true)
+            // 清理旧文件名 irelay-models.json 的残留孤儿
+            try? FileManager.default.removeItem(at: configDir.appendingPathComponent("irelay-models.json"))
             try modelCatalogData().write(to: modelCatalogPath, options: .atomic)
             try next.write(to: configPath, atomically: true, encoding: .utf8)
             return true
@@ -64,27 +66,29 @@ final class CodexConfigManager {
 
     // MARK: - TOML
 
-    private func configureCodexTOML(_ existing: String, model: String, port: UInt16) -> String {
+    private func configureCodexTOML(_ existing: String, model: String, apiKey: String) -> String {
         var body = removeTopLevelModelKeys(existing)
-        body = removeIRelaySection(body)
+        body = removeProviderSection(body)
         let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        var result = "model_provider = \"iRelay\"\n"
+        var result = "model_provider = \"deepseek\"\n"
         result += "model = \"\(model)\"\n"
-        result += "model_catalog_json = \"\(tomlEscaped(modelCatalogPath.path))\""
+        result += "model_catalog_json = \"~/.codex/models.json\"\n"
+        result += "forced_login_method = \"api\""
         if !trimmed.isEmpty {
             result += "\n\n" + trimmed
         }
-        result += "\n\n[model_providers.iRelay]\n"
-        result += "name = \"iRelay\"\n"
-        result += "base_url = \"http://127.0.0.1:\(port)/v1\"\n"
+        result += "\n\n[model_providers.deepseek]\n"
+        result += "name = \"deepseek\"\n"
+        result += "base_url = \"https://api.deepseek.com\"\n"
         result += "wire_api = \"responses\"\n"
+        result += "experimental_bearer_token = \"\(tomlEscaped(apiKey))\"\n"
         return result
     }
 
     private func disableCodexTOML(_ existing: String) -> String {
         var result = removeTopLevelModelKeys(existing)
-        result = removeIRelaySection(result)
+        result = removeProviderSection(result)
         return result.trimmingCharacters(in: .whitespacesAndNewlines) + "\n"
     }
 
@@ -104,13 +108,13 @@ final class CodexConfigManager {
         return lines.joined(separator: "\n")
     }
 
-    private func removeIRelaySection(_ toml: String) -> String {
-        let target = "[model_providers.iRelay]"
+    private func removeProviderSection(_ toml: String) -> String {
+        let target = "[model_providers.deepseek]"
         var result: [String] = []
         var inTarget = false
         for line in toml.components(separatedBy: "\n") {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed == target {
+            if trimmed.lowercased() == target {
                 inTarget = true
                 continue
             }

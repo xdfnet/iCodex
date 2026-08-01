@@ -2,29 +2,20 @@ import Foundation
 import Combine
 import iRelayCore
 
-enum RelayStatus: Equatable {
-    case stopped
-    case starting
-    case running
-}
-
 @MainActor
 final class RelayState: ObservableObject {
-    @Published var status: RelayStatus = .stopped
-    @Published var model: String = "deepseek-v4-pro" {
+    @Published var model: String = "deepseek-v4-flash" {
         didSet { UserDefaults.standard.set(model, forKey: Self.modelKey) }
     }
     @Published var availableModels: [ModelInfo] = RelayState.loadModels()
     @Published var apiKey: String = "" {
         didSet { UserDefaults.standard.set(apiKey, forKey: Self.keychainKey) }
     }
-    @Published var activeRequestCount: Int = 0
     @Published var codexEnabled: Bool {
         didSet { UserDefaults.standard.set(codexEnabled, forKey: Self.codexKey) }
     }
-    var upstream: String = "https://api.deepseek.com"
-    /// 数据流活跃状态变化回调（供 NSStatusItem 更新图标）
-    var onActivityChanged: (() -> Void)?
+    /// Codex 直连的 DeepSeek 上游地址
+    let upstream = "https://api.deepseek.com"
 
     private static let keychainKey = "irelay_apiKey"
     static let modelKey = "irelay_model"
@@ -40,84 +31,28 @@ final class RelayState: ObservableObject {
               !models.isEmpty
         else {
             return [
-                ModelInfo(id: "deepseek-v4-pro", description: "DeepSeek V4 Pro"),
                 ModelInfo(id: "deepseek-v4-flash", description: "DeepSeek V4 Flash"),
+                ModelInfo(id: "deepseek-v4-pro", description: "DeepSeek V4 Pro"),
             ]
         }
         return models
     }
 
     let codexConfigManager = CodexConfigManager()
-    static let version = "2.2.2"
+    static let version = "3.0.0"
 
     /// 实时读文件判断补丁状态
     var isCodexPatched: Bool { codexConfigManager.isPatched }
 
     init() {
         apiKey = UserDefaults.standard.string(forKey: Self.keychainKey) ?? ""
-        model = UserDefaults.standard.string(forKey: Self.modelKey) ?? "deepseek-v4-pro"
+        model = UserDefaults.standard.string(forKey: Self.modelKey) ?? "deepseek-v4-flash"
         codexEnabled = UserDefaults.standard.object(forKey: Self.codexKey) as? Bool ?? true
 
-        turnOn(model: model)
-    }
-
-    private var server: HTTPServer?
-    private var client: ChatClient?
-    private var handler: RelayHandler?
-    private var codexEnableSkippedForMissingKey = false
-    var isOn: Bool { status == .running || status == .starting }
-
-    func turnOn(model: String) {
-        self.model = model
-        guard status == .stopped else { return }
-        status = .starting
-        Log.info("service_starting", "model", model, "port", 8787)
-
-        guard let upstreamURL = URL(string: upstream) else {
-            Log.error("config_invalid", "key", "upstream", "value", upstream)
-            status = .stopped
-            return
+        // 升级迁移：此前已开启且配置了 Key 时，把 config.toml 同步为直连 DeepSeek
+        if codexEnabled, !apiKey.isEmpty {
+            syncCodexConfig()
         }
-
-        let c = ChatClient(apiKey: apiKey, baseURL: upstreamURL)
-        client = c
-        let h = RelayHandler(client: c, provider: ProviderConfig.deepSeek)
-        h.onRequestActive = { [weak self] in
-            Task { @MainActor in
-                self?.activeRequestCount += 1
-                self?.onActivityChanged?()
-            }
-        }
-        h.onRequestInactive = { [weak self] in
-            Task { @MainActor in
-                self?.activeRequestCount = max(0, (self?.activeRequestCount ?? 0) - 1)
-                self?.onActivityChanged?()
-            }
-        }
-        handler = h
-
-        let httpServer = HTTPServer()
-        h.register(on: httpServer)
-
-        do {
-            try httpServer.start(port: 8787)
-            server = httpServer
-            status = .running
-            Log.info("server_started", "port", 8787)
-        } catch {
-            server = nil
-            client = nil
-            status = .stopped
-            Log.error("server_start_failed", "error", error.localizedDescription)
-        }
-    }
-
-    func turnOff() {
-        guard status == .running || status == .starting else { return }
-        Log.info("service_stopping")
-        stopServer()
-        status = .stopped
-        activeRequestCount = 0
     }
 
     func selectModel(_ id: String) {
@@ -143,7 +78,7 @@ final class RelayState: ObservableObject {
         if codexEnabled {
             disableCodex()
         } else if !apiKey.isEmpty {
-            model = "deepseek-v4-pro"
+            model = "deepseek-v4-flash"
             codexEnabled = true
             syncCodexConfig()
         }
@@ -171,9 +106,8 @@ final class RelayState: ObservableObject {
         let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
         apiKey = trimmed
-        client?.apiKey = trimmed
-        if isOn {
-            Task { await fetchModels() }
+        if codexEnabled {
+            syncCodexConfig()
         }
         Log.info("api_key_updated")
         return true
@@ -198,12 +132,7 @@ final class RelayState: ObservableObject {
         Self.saveModels(models)
     }
 
-    private func stopServer() {
-        server?.stop()
-        server = nil
-        client = nil
-        handler = nil
-    }
+    private var codexEnableSkippedForMissingKey = false
 
     private func syncCodexConfig() {
         guard codexEnabled else {
@@ -216,7 +145,7 @@ final class RelayState: ObservableObject {
             codexEnabled = false
             return
         }
-        if codexConfigManager.enable(model: model, port: 8787) {
+        if codexConfigManager.enable(model: model, apiKey: apiKey) {
             codexEnableSkippedForMissingKey = false
             Log.info("codex_config_enabled", "model", model)
         }
