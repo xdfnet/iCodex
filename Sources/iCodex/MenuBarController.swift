@@ -109,10 +109,6 @@ final class MenuBarController: NSObject {
             menu.addItem(item)
         }
 
-        let version = NSMenuItem(title: "版本: \(AppInfo.version)", action: nil, keyEquivalent: "")
-        version.isEnabled = false
-        menu.addItem(version)
-
         let quit = NSMenuItem(title: "退出", action: #selector(quitApp), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
