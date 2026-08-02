@@ -1,4 +1,4 @@
-# iRelay 架构文档
+# iCodex 架构文档
 
 > 版本 3.0.0 · macOS 菜单栏应用 · Zero external dependencies
 
@@ -6,9 +6,9 @@
 
 ## 概述
 
-**iRelay** 是一个运行在 macOS 菜单栏的配置与补丁工具。
+**iCodex** 是一个运行在 macOS 菜单栏的配置与补丁工具。
 
-DeepSeek 官方已原生支持 Responses API（OpenAI 格式兼容），因此 **Codex 直接连接 `https://api.deepseek.com`**，iRelay 不再做本地协议中转。iRelay 核心负责两件事（另提供菜单栏余额查询）：
+DeepSeek 官方已原生支持 Responses API（OpenAI 格式兼容），因此 **Codex 直接连接 `https://api.deepseek.com`**，iCodex 不再做本地协议中转。iCodex 核心负责两件事（另提供菜单栏余额查询）：
 
 1. **配置**：向 `~/.codex/config.toml` 写入直连 DeepSeek 的 provider 配置（`base_url` + `wire_api` + `model_catalog_json`）
 2. **补丁**：等长替换 Codex 桌面版 `app.asar` 中的模型白名单过滤表达式，让 DeepSeek 模型出现在模型列表中
@@ -18,7 +18,7 @@ DeepSeek 官方已原生支持 Responses API（OpenAI 格式兼容），因此 *
 ```text
 Codex ──responses API──→ https://api.deepseek.com
                              ↑
-       （iRelay 只写配置、打补丁，不参与请求转发）
+       （iCodex 只写配置、打补丁，不参与请求转发）
 ```
 
 ---
@@ -33,7 +33,7 @@ Codex ──responses API──→ https://api.deepseek.com
                        │ 持有
                        ▼
 ┌──────────────────────────────────────────────┐
-│             State Layer (RelayState)          │
+│             State Layer (CodexState)          │
 │  apiKey · model · codexEnabled · 模型列表缓存 │
 │  UserDefaults 持久化                          │
 └─────────┬────────────────────────────────────┘
@@ -50,17 +50,17 @@ Codex ──responses API──→ https://api.deepseek.com
 ### 模块结构
 
 ```text
-📦 iRelayCore (library)
+📦 iCodexCore (library)
 ├── Models/
-│   └── RelayConfig.swift    # ModelInfo 数据模型
+│   └── CodexConfig.swift    # ModelInfo 数据模型
 └── Services/
     └── Logger.swift          # 异步文件日志
 
-📦 iRelay (executable, depends on iRelayCore)
-├── iRelayApp.swift           # @main 入口 + API Key 配置窗口
+📦 iCodex (executable, depends on iCodexCore)
+├── iCodexApp.swift           # @main 入口 + API Key 配置窗口
 ├── MenuBarController.swift   # NSStatusItem 菜单栏（模型/补丁/配置）
 ├── Models/
-│   └── RelayState.swift      # 全局状态（apiKey/model/codexEnabled）
+│   └── CodexState.swift      # 全局状态（apiKey/model/codexEnabled）
 └── Services/
     ├── CodexConfigManager.swift  # ~/.codex/config.toml 管理
     └── CodexAppPatcher.swift # Codex 桌面 App 白名单补丁
@@ -118,14 +118,14 @@ Codex ──responses API──→ https://api.deepseek.com
 
 | 存储位置 | 内容 | 读写时机 |
 |---|---|---|
-| `UserDefaults` key `irelay_apiKey` | DeepSeek API Key | 配置窗口保存时 |
-| `UserDefaults` key `irelay_model` | 当前模型 ID | 切换模型时 |
-| `UserDefaults` key `irelay_codexEnabled` | Codex 集成开关 | 开关模型时 |
-| `UserDefaults` key `irelay_models` | 模型列表缓存 | 拉取模型列表后 |
+| `UserDefaults` key `icodex_apiKey` | DeepSeek API Key | 配置窗口保存时 |
+| `UserDefaults` key `icodex_model` | 当前模型 ID | 切换模型时 |
+| `UserDefaults` key `icodex_codexEnabled` | Codex 集成开关 | 开关模型时 |
+| `UserDefaults` key `icodex_models` | 模型列表缓存 | 拉取模型列表后 |
 | `~/.codex/config.toml` | Codex 直连配置 | 开模型/切模型时写，关模型时清 |
 | `~/.codex/models.json` | 模型目录（DeepSeek） | 同上 |
 | `/Applications/ChatGPT.app/.../app.asar` | Codex 桌面 App 前端包 | 打补丁时备份 + 等长替换 |
-| `~/.config/irelay/irelay.log` | 运行日志 | 每行日志异步追加 |
+| `~/.config/icodex/icodex.log` | 运行日志 | 每行日志异步追加 |
 
 ---
 

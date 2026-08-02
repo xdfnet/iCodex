@@ -1,6 +1,6 @@
 import Foundation
 import AppKit
-import iRelayCore
+import iCodexCore
 
 /// 管理 Codex 桌面版 app.asar 补丁
 final class CodexAppPatcher {
@@ -25,7 +25,7 @@ final class CodexAppPatcher {
 
     /// 检测 App 管理权限（试探写入临时文件）
     private var hasAppManagementPermission: Bool {
-        let testFile = asar.deletingLastPathComponent().appendingPathComponent(".irelay_perm_test")
+        let testFile = asar.deletingLastPathComponent().appendingPathComponent(".icodex_perm_test")
         do {
             try Data("test".utf8).write(to: testFile, options: .atomic)
             try FileManager.default.removeItem(at: testFile)
@@ -93,7 +93,7 @@ final class CodexAppPatcher {
         DispatchQueue.main.async {
             let alert = NSAlert()
             alert.messageText = "需要「App 管理」权限"
-            alert.informativeText = "iRelay 需要修改 Codex 桌面版才能显示 DeepSeek 模型。\n\n请前往：系统设置 → 隐私与安全性 → App 管理 → 开启 iRelay"
+            alert.informativeText = "iCodex 需要修改 Codex 桌面版才能显示 DeepSeek 模型。\n\n请前往：系统设置 → 隐私与安全性 → App 管理 → 开启 iCodex"
             alert.addButton(withTitle: "打开系统设置")
             alert.addButton(withTitle: "取消")
             alert.alertStyle = .warning

@@ -5,13 +5,13 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>zh_CN</string>
     <key>CFBundleExecutable</key>
-    <string>iRelay</string>
+    <string>iCodex</string>
     <key>CFBundleIdentifier</key>
-    <string>com.xdf.irelay</string>
+    <string>com.xdf.icodex</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>iRelay</string>
+    <string>iCodex</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

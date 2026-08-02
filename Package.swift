@@ -2,17 +2,17 @@
 import PackageDescription
 
 let package = Package(
-    name: "iRelay",
+    name: "iCodex",
     platforms: [.macOS(.v14)],
     targets: [
         .target(
-            name: "iRelayCore",
-            path: "Sources/iRelayCore"
+            name: "iCodexCore",
+            path: "Sources/iCodexCore"
         ),
         .executableTarget(
-            name: "iRelay",
-            dependencies: ["iRelayCore"],
-            path: "Sources/iRelay"
+            name: "iCodex",
+            dependencies: ["iCodexCore"],
+            path: "Sources/iCodex"
         ),
     ]
 )

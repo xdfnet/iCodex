@@ -1,13 +1,13 @@
 import Cocoa
-import iRelayCore
+import iCodexCore
 
 @MainActor
 final class MenuBarController: NSObject {
     private var statusItem: NSStatusItem?
-    private let state: RelayState
+    private let state: CodexState
     private var balanceText: String?
 
-    init(state: RelayState) {
+    init(state: CodexState) {
         self.state = state
         super.init()
         setup()

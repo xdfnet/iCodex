@@ -19,5 +19,5 @@ jobs:
         run: ./build.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: iRelay
-          path: iRelay.app
+          name: iCodex
+          path: iCodex.app

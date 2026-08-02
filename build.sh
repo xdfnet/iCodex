@@ -3,7 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-PROJECT="iRelay"
+PROJECT="iCodex"
 CONFIG="${1:-release}"
 
 if [ "$CONFIG" = "debug" ]; then
@@ -39,7 +39,7 @@ if [ "$CONFIG" = "release" ]; then
 fi
 
 echo "==> 安装..."
-rm -rf /Applications/iRelay.app
+rm -rf /Applications/iCodex.app
 cp -r "$APP_BUNDLE" /Applications/
-xattr -dr com.apple.quarantine /Applications/iRelay.app
-echo "   已安装到 /Applications/iRelay.app"
+xattr -dr com.apple.quarantine /Applications/iCodex.app
+echo "   已安装到 /Applications/iCodex.app"

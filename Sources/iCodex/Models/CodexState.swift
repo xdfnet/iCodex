@@ -1,13 +1,13 @@
 import Foundation
 import Combine
-import iRelayCore
+import iCodexCore
 
 @MainActor
-final class RelayState: ObservableObject {
+final class CodexState: ObservableObject {
     @Published var model: String = "deepseek-v4-flash" {
         didSet { UserDefaults.standard.set(model, forKey: Self.modelKey) }
     }
-    @Published var availableModels: [ModelInfo] = RelayState.loadModels()
+    @Published var availableModels: [ModelInfo] = CodexState.loadModels()
     @Published var apiKey: String = "" {
         didSet { UserDefaults.standard.set(apiKey, forKey: Self.keychainKey) }
     }
@@ -17,16 +17,16 @@ final class RelayState: ObservableObject {
     /// Codex 直连的 DeepSeek 上游地址
     let upstream = "https://api.deepseek.com"
 
-    private static let keychainKey = "irelay_apiKey"
-    static let modelKey = "irelay_model"
-    private static let codexKey = "irelay_codexEnabled"
+    private static let keychainKey = "icodex_apiKey"
+    static let modelKey = "icodex_model"
+    private static let codexKey = "icodex_codexEnabled"
     private static func saveModels(_ models: [ModelInfo]) {
         guard let data = try? JSONEncoder().encode(models) else { return }
-        UserDefaults.standard.set(data, forKey: "irelay_models")
+        UserDefaults.standard.set(data, forKey: "icodex_models")
     }
 
     nonisolated static func loadModels() -> [ModelInfo] {
-        guard let data = UserDefaults.standard.data(forKey: "irelay_models"),
+        guard let data = UserDefaults.standard.data(forKey: "icodex_models"),
               let models = try? JSONDecoder().decode([ModelInfo].self, from: data),
               !models.isEmpty
         else {
@@ -41,10 +41,28 @@ final class RelayState: ObservableObject {
     let codexConfigManager = CodexConfigManager()
     static let version = "3.0.0"
 
+    /// 一次性迁移旧版 iRelay 的 UserDefaults key → iCodex
+    private static func migrateLegacyKeys() {
+        let pairs: [(String, String)] = [
+            ("irelay_apiKey", "icodex_apiKey"),
+            ("irelay_model", "icodex_model"),
+            ("irelay_codexEnabled", "icodex_codexEnabled"),
+            ("irelay_models", "icodex_models"),
+        ]
+        let d = UserDefaults.standard
+        for (old, new) in pairs {
+            if let v = d.object(forKey: old), d.object(forKey: new) == nil {
+                d.set(v, forKey: new)
+                d.removeObject(forKey: old)
+            }
+        }
+    }
+
     /// 实时读文件判断补丁状态
     var isCodexPatched: Bool { codexConfigManager.isPatched }
 
     init() {
+        Self.migrateLegacyKeys()
         apiKey = UserDefaults.standard.string(forKey: Self.keychainKey) ?? ""
         model = UserDefaults.standard.string(forKey: Self.modelKey) ?? "deepseek-v4-flash"
         codexEnabled = UserDefaults.standard.object(forKey: Self.codexKey) as? Bool ?? true

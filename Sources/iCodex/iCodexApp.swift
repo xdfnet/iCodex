@@ -1,9 +1,9 @@
 import SwiftUI
 import AppKit
-import iRelayCore
+import iCodexCore
 
 @main
-struct iRelayApp: App {
+struct iCodexApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
@@ -20,7 +20,7 @@ struct iRelayApp: App {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    let state = RelayState()
+    let state = CodexState()
     private var menuBarController: MenuBarController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -32,7 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 // MARK: - API Key 配置窗口
 
 @MainActor
-func openApiKeyConfig(state: RelayState) {
+func openApiKeyConfig(state: CodexState) {
     ApiKeyConfigWindow.shared.present(state: state)
 }
 
@@ -88,7 +88,7 @@ final class ApiKeyConfigWindow: NSWindowController {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    func present(state: RelayState) {
+    func present(state: CodexState) {
         let dismissAction = { [weak self] in self?.dismiss(); () }
         let view = ApiKeyFormView(
             currentKey: state.apiKey,

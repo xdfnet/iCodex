@@ -1,5 +1,5 @@
 import Foundation
-import iRelayCore
+import iCodexCore
 
 /// 管理 ~/.codex/config.toml，控制 Codex 直连 DeepSeek
 final class CodexConfigManager {
@@ -131,6 +131,7 @@ final class CodexConfigManager {
     private func isTopLevelModelKey(_ line: String) -> Bool {
         guard let key = keyName(line) else { return false }
         return key == "model_provider" || key == "model" || key == "model_catalog_json"
+            || key == "forced_login_method"
     }
 
     private func keyName(_ line: String) -> String? {
@@ -142,7 +143,7 @@ final class CodexConfigManager {
     // MARK: - Model catalog
 
     private func modelCatalogData() throws -> Data {
-        let models = RelayState.loadModels().enumerated().map { i, m in
+        let models = CodexState.loadModels().enumerated().map { i, m in
             modelInfo(m.id, desc: m.description, priority: i)
         }
         let catalog: [String: Any] = ["models": models.isEmpty

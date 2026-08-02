@@ -2,7 +2,7 @@ import Foundation
 import Darwin
 import AppKit
 
-/// 文件日志，输出到 ~/.config/irelay/irelay.log
+/// 文件日志，输出到 ~/.config/icodex/icodex.log
 ///
 /// Output format:
 ///   [2026-06-04 23:37:02.616] [INFO] service_starting model=deepseek-v4-pro
@@ -20,11 +20,11 @@ public enum Log {
     private static let logDir: URL = {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".config")
-            .appendingPathComponent("irelay")
+            .appendingPathComponent("icodex")
     }()
 
     private static var logPath: URL {
-        logDir.appendingPathComponent("irelay.log")
+        logDir.appendingPathComponent("icodex.log")
     }
 
     // MARK: - Formatting
@@ -38,7 +38,7 @@ public enum Log {
 
     // MARK: - Dispatch
 
-    private static let queue = DispatchQueue(label: "com.xdf.irelay.log", qos: .utility)
+    private static let queue = DispatchQueue(label: "com.xdf.icodex.log", qos: .utility)
 
     // MARK: - reopenable writer state
 
@@ -132,7 +132,7 @@ public enum Log {
         return ""
     }
 
-    /// Visual separator for request boundaries (matching iRelay's `END` line).
+    /// Visual separator for request boundaries (matching iCodex's `END` line).
     public static func end() {
         info("-------------------------END------------------------------")
     }
