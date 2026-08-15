@@ -39,7 +39,6 @@ final class CodexState: ObservableObject {
     }
 
     let codexConfigManager = CodexConfigManager()
-    static let version = "3.0.0"
 
     /// 一次性迁移旧版 iRelay 的 UserDefaults key → iCodex
     private static func migrateLegacyKeys() {
@@ -57,9 +56,6 @@ final class CodexState: ObservableObject {
             }
         }
     }
-
-    /// 实时读文件判断补丁状态
-    var isCodexPatched: Bool { codexConfigManager.isPatched }
 
     init() {
         Self.migrateLegacyKeys()
@@ -100,24 +96,6 @@ final class CodexState: ObservableObject {
             codexEnabled = true
             syncCodexConfig()
         }
-    }
-
-    /// 切换补丁状态：已打→还原，未打→打补丁
-    func toggleCodexAsar() {
-        if codexConfigManager.isPatched {
-            guard codexConfigManager.restoreAppAsar() else {
-                Log.error("codex_asar_restore_failed")
-                return
-            }
-            Log.info("codex_asar_restored")
-        } else {
-            guard codexConfigManager.patchAppAsar() else {
-                Log.error("codex_asar_patch_failed")
-                return
-            }
-            Log.info("codex_asar_patched")
-        }
-        objectWillChange.send()
     }
 
     func saveApiKey(_ key: String) -> Bool {

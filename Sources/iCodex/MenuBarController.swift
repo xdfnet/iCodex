@@ -86,11 +86,6 @@ final class MenuBarController: NSObject {
         model.target = self
         menu.addItem(model)
 
-        let patch = NSMenuItem(title: state.isCodexPatched ? "关闭补丁" : "开启补丁",
-                               action: #selector(togglePatch), keyEquivalent: "")
-        patch.target = self
-        menu.addItem(patch)
-
         menu.addItem(.separator())
 
         let apiKey = NSMenuItem(title: "设置密钥", action: #selector(openConfig), keyEquivalent: "")
@@ -121,10 +116,6 @@ final class MenuBarController: NSObject {
     @objc private func toggleModel() {
         state.toggleCodex()
         updateIcon()
-    }
-
-    @objc private func togglePatch() {
-        state.toggleCodexAsar()
     }
 
     @objc private func openConfig() {

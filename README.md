@@ -5,7 +5,7 @@
 ![Swift](https://img.shields.io/badge/Swift-5.9+-orange)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> 纯原生 macOS 菜单栏 App — Codex 直连 DeepSeek 配置 + 白名单补丁工具。
+> 纯原生 macOS 菜单栏 App — Codex 直连 DeepSeek 配置工具。
 >
 > 纯 Swift 实现，**零外部依赖**。菜单栏常驻，即开即用。
 
@@ -14,8 +14,6 @@
 | 功能 | 说明 |
 |------|------|
 | 模型开关 | 配置 Codex 直连 DeepSeek 官方 API，默认使用 DeepSeek V4 Flash |
-| 补丁开关 | 独立修补 Codex 桌面版模型白名单过滤，与模型配置解耦 |
-| 权限检查 | 操作前检测 App 管理权限，未授权弹窗引导 |
 | 余额查询 | 菜单中实时显示 DeepSeek 账户可用余额 |
 | API Key | 窗口配置 DeepSeek API Key |
 | 模型元数据 | 自动为 Codex 提供完整模型信息，消除 fallback 警告 |
@@ -59,9 +57,8 @@ open iCodex.app               # 启动
 ## 使用
 
 1. 启动 iCodex，点击菜单栏图标 → **设置密钥** → 输入 DeepSeek API Key
-2. 点击 **开启补丁** → 授权 App 管理权限 → 修补 Codex 模型白名单
-3. 点击 **开启模型** → 配置 Codex 直连 DeepSeek
-4. 开关模型、打补丁等均在菜单栏操作
+2. 点击 **开启模型** → 配置 Codex 直连 DeepSeek
+3. 开关模型等操作均在菜单栏完成
 
 首次使用后重启 Codex，它会自动从官方 API 获取模型列表。
 
@@ -69,30 +66,27 @@ open iCodex.app               # 启动
 
 ```
 NSStatusItem (AppKit)
-  ├─ 开启/关闭模型 / 开启/关闭补丁 / 配置 / 退出
+  ├─ 开启/关闭模型 / 配置 / 退出
   ├─ CodexState     — 全局状态（apiKey / model / codexEnabled）
   │   └─ UserDefaults 持久化 + 模型列表缓存
   └─ CodexConfigManager — ~/.codex/config.toml
       ├─ 写入 model_provider = "deepseek" + base_url，指向官方 API
-      ├─ 写入 model_catalog_json，让 Codex 正确识别 DeepSeek 模型
-      └─ CodexAppPatcher — 修补桌面 App 模型白名单过滤
+      └─ 写入 model_catalog_json，让 Codex 正确识别 DeepSeek 模型
 ```
 
 - **请求链路**：Codex 直连 `https://api.deepseek.com`（官方 Responses API），iCodex 不参与请求转发
 - **CodexConfigManager**: 配 Key/切模型时写入 `model_provider = "DeepSeek"`、当前模型、`model_catalog_json`；关模型时清理
-- **CodexAppPatcher**: 等长替换 `app.asar` 中白名单过滤表达式，去除模型过滤
 
 ## 目录结构
 
 ```
 Sources/iCodex/
 ├── iCodexApp.swift              # @main 入口，API Key 配置窗口
-├── MenuBarController.swift      # NSStatusItem 菜单栏（模型/补丁/配置）
+├── MenuBarController.swift      # NSStatusItem 菜单栏（模型/配置）
 ├── Models/
 │   └── CodexState.swift         # @Observable 全局状态
 └── Services/
-    ├── CodexConfigManager.swift # ~/.codex/config.toml 和模型 catalog 管理
-    └── CodexAppPatcher.swift    # Codex 桌面 App 模型菜单补丁
+    └── CodexConfigManager.swift # ~/.codex/config.toml 和模型 catalog 管理
 ```
 
 ## Codex 兼容性
@@ -100,19 +94,11 @@ Sources/iCodex/
 | 组件 | 支持版本 | 说明 |
 |------|---------|------|
 | Codex CLI | ≥ 0.142.0 | 通过 `~/.codex/config.toml` 配置直连 |
-| Codex 桌面 App | 26.727.51351 | 修补 `app.asar` 两处模型白名单过滤（主 UI + list-models-for-host，已实测兼容含 amazonBedrock 分支的新版） |
+| Codex 桌面 App | ≥ 26.810 | 通过官方 `model_catalog_json` 识别 DeepSeek 模型，无需补丁 |
 
-> ⚠️ **补丁机制依赖 asar 中 minified JS 的变量名**，每次 Codex 桌面版升级后变量名可能变化（如 `s→l→u→i/e/r`）或新增过滤点，导致补丁失效。届时需更新 iCodex 重新适配。
+## 模型识别
 
-## Codex 桌面 App 适配
-
-Codex 桌面 App 前端会读取远端 Statsig 模型白名单。某些版本中白名单只包含 `gpt-*` 模型，并启用了 `use_hidden_models`，导致 DeepSeek 模型被过滤，模型菜单显示为空。即使 Codex 直连 DeepSeek 官方 API，只要模型不在桌面版白名单中，仍需补丁才能出现在模型选择器中。
-
-iCodex 提供独立的「开启补丁/关闭补丁」菜单项，修补 Codex 桌面版前会先检测 `App 管理`权限，未授权则弹窗引导。
-
-补丁方式是等长替换前端过滤表达式，避免依赖 `npx asar` 或其他外部工具。每次修补前会重新备份（删旧→建新），保证备份始终对应当前 Codex 版本。
-
-补丁与模型配置完全解耦：关闭模型配置不会还原补丁，关闭补丁也不会影响直连配置。
+Codex 桌面版通过 `model_catalog_json`（官方扩展机制）读取第三方模型。iCodex 开启模型时写入 `~/.codex/models.json`，其中完整定义 DeepSeek 模型元数据（slug / 上下文窗口 / reasoning levels 等），Codex 会将其直接加入可用模型列表，无需修改 `app.asar`。因此升级 Codex 桌面版不会导致 DeepSeek 模型失效。
 
 ## 许可证
 

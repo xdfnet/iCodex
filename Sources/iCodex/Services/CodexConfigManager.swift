@@ -3,8 +3,6 @@ import iCodexCore
 
 /// 管理 ~/.codex/config.toml，控制 Codex 直连 DeepSeek
 final class CodexConfigManager {
-    private let appPatcher = CodexAppPatcher()
-
     private var configPath: URL {
         let env = ProcessInfo.processInfo.environment["CODEX_CONFIG"]
         if let env, !env.isEmpty {
@@ -45,23 +43,6 @@ final class CodexConfigManager {
         }
         try? FileManager.default.removeItem(at: modelCatalogPath)
         return true
-    }
-
-    /// 是否已打补丁
-    var isPatched: Bool { appPatcher.isPatched }
-
-    /// 打补丁（先检查权限）
-    @discardableResult
-    func patchAppAsar() -> Bool {
-        guard appPatcher.ensurePermission() else { return false }
-        return appPatcher.ensurePatched()
-    }
-
-    /// 还原补丁（先检查权限）
-    @discardableResult
-    func restoreAppAsar() -> Bool {
-        guard appPatcher.ensurePermission() else { return false }
-        return appPatcher.restoreFromBackup()
     }
 
     // MARK: - TOML
